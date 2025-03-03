@@ -1,0 +1,19 @@
+{
+  "appEnv": "development",
+  "appName": "user-management-service",
+  "appPort": "8093",
+  "appTimezone": "Asia/Jakarta",
+  "secretKey": "user-management",
+
+  "dbMysqlDriver": "mysql",
+  "dbMysqlHost": "localhost",
+  "dbMysqlPort": "3306",
+  "dbMysqlDbName": "user_management",
+  "dbMysqlUser": "root",
+  "dbMysqlPassword": "password",
+  "dbMysqlSslMode": "disable",
+  "dbMysqlMaxOpenConnections": 10,
+  "dbMysqlMaxLifeTimeConnection": 60,
+  "dbMysqlMaxIdleConnections": 10,
+  "dbMysqlMaxIdleTimeConnection": 30
+}
