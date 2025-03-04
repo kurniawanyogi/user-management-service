@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/crypto/bcrypt"
+	"sync"
 	"testing"
 	"time"
 	"user-management-service/common"
@@ -65,6 +66,7 @@ func (s *UserServiceSuite) TearDownTest() {
 }
 
 func (s *UserServiceSuite) TestRegister() {
+	var wg sync.WaitGroup
 	type (
 		args struct {
 			ctx     context.Context
@@ -95,8 +97,21 @@ func (s *UserServiceSuite) TestRegister() {
 				},
 			},
 			mockFunc: func(m *listMock, args args) {
-				s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
-					Return(&model.User{Username: "test123", Status: common.StatusUserActive}, nil)
+				// membutuhkan mock ke kedua method
+				// karena implementasi goroutine menyebabkan kedua method berjalan parallel
+
+				wg.Add(2)
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
+						Return(&model.User{Username: "test123", Status: common.StatusUserActive}, nil)
+				}()
+
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByEmail", mock.Anything, args.payload.Email).
+						Return(nil, nil)
+				}()
 			},
 			want: want{
 				err: common.ErrUsernameAlreadyTaken,
@@ -115,8 +130,20 @@ func (s *UserServiceSuite) TestRegister() {
 				},
 			},
 			mockFunc: func(m *listMock, args args) {
-				s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
-					Return(nil, common.ErrSQLExec)
+				// membutuhkan mock ke kedua method
+				// karena implementasi goroutine menyebabkan kedua method berjalan parallel
+				wg.Add(2)
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
+						Return(nil, common.ErrSQLExec)
+				}()
+
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByEmail", mock.Anything, args.payload.Email).
+						Return(nil, nil)
+				}()
 			},
 			want: want{
 				err: common.ErrSQLExec,
@@ -135,14 +162,22 @@ func (s *UserServiceSuite) TestRegister() {
 				},
 			},
 			mockFunc: func(m *listMock, args args) {
-				s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
-					Return(nil, nil)
-				s.mocks.userRepo.On("FindByEmail", mock.Anything, args.payload.Email).
-					Return(&model.User{
-						Username: "test1234",
-						Status:   common.StatusUserActive,
-						Email:    "test123@gmail.com",
-					}, nil)
+				wg.Add(2)
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
+						Return(nil, nil)
+				}()
+
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByEmail", mock.Anything, args.payload.Email).
+						Return(&model.User{
+							Username: "test1234",
+							Status:   common.StatusUserActive,
+							Email:    "test123@gmail.com",
+						}, nil)
+				}()
 			},
 			want: want{
 				err: common.ErrEmailAlreadyTaken,
@@ -161,10 +196,17 @@ func (s *UserServiceSuite) TestRegister() {
 				},
 			},
 			mockFunc: func(m *listMock, args args) {
-				s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
-					Return(nil, nil)
-				s.mocks.userRepo.On("FindByEmail", mock.Anything, args.payload.Email).
-					Return(nil, common.ErrSQLExec)
+				wg.Add(2)
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
+						Return(nil, nil)
+				}()
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByEmail", mock.Anything, args.payload.Email).
+						Return(nil, common.ErrSQLExec)
+				}()
 			},
 			want: want{
 				err: common.ErrSQLExec,
@@ -183,11 +225,18 @@ func (s *UserServiceSuite) TestRegister() {
 				},
 			},
 			mockFunc: func(m *listMock, args args) {
-				s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
-					Return(nil, nil)
-				s.mocks.userRepo.On("FindByEmail", mock.Anything, args.payload.Email).
-					Return(nil, common.ErrSQLExec)
-				s.mocks.userRepo.On("Insert", mock.Anything, args.payload.Email).
+				wg.Add(2)
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
+						Return(nil, nil)
+				}()
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByEmail", mock.Anything, args.payload.Email).
+						Return(nil, nil)
+				}()
+				s.mocks.userRepo.On("Insert", mock.Anything, mock.Anything).
 					Return(nil, common.ErrSQLExec)
 			},
 			want: want{
@@ -207,11 +256,18 @@ func (s *UserServiceSuite) TestRegister() {
 				},
 			},
 			mockFunc: func(m *listMock, args args) {
-				s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
-					Return(nil, nil)
-				s.mocks.userRepo.On("FindByEmail", mock.Anything, args.payload.Email).
-					Return(nil, common.ErrSQLExec)
-				s.mocks.userRepo.On("Insert", mock.Anything, args.payload.Email).
+				wg.Add(2)
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByUsername", mock.Anything, args.payload.Username).
+						Return(nil, nil)
+				}()
+				go func() {
+					defer wg.Done()
+					s.mocks.userRepo.On("FindByEmail", mock.Anything, args.payload.Email).
+						Return(nil, nil)
+				}()
+				s.mocks.userRepo.On("Insert", mock.Anything, mock.Anything).
 					Return(nil, nil)
 			},
 			want: want{
@@ -223,9 +279,9 @@ func (s *UserServiceSuite) TestRegister() {
 		s.Run(tc.name, func() {
 			s.SetupTest()
 			tc.mockFunc(&s.mocks, tc.args)
+			wg.Wait()
 
 			response := s.UserService.Register(tc.args.ctx, tc.args.payload)
-
 			s.Equal(tc.want.err, response)
 		})
 	}

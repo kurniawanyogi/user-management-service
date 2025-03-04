@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
+	"sync"
 	"time"
 	"user-management-service/common"
 	"user-management-service/common/logger"
@@ -35,20 +36,48 @@ func NewUserService(common common.IRegistry, repositories repository.IRegistry) 
 }
 
 func (s *userService) Register(ctx context.Context, payload model.RegistrationUserRequest) error {
-	existingUsername, err := s.repositories.GetUserRepository().FindByUsername(ctx, payload.Username)
-	if err != nil && err.Error() != common.ErrDataNotFound.Error() {
-		return err
-	}
-	if existingUsername != nil && existingUsername.Status == common.StatusUserActive {
-		return common.ErrUsernameAlreadyTaken
-	}
+	// Implementasi goroutine untuk menjalankan 2 method ke repository
+	var wg sync.WaitGroup
 
-	existingEmail, err := s.repositories.GetUserRepository().FindByEmail(ctx, payload.Email)
-	if err != nil && err.Error() != common.ErrDataNotFound.Error() {
+	// Buffer untuk menghindari goroutine leak
+	errChan := make(chan error, 2)
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		existingUsername, err := s.repositories.GetUserRepository().FindByUsername(ctx, payload.Username)
+		if err != nil && err.Error() != common.ErrDataNotFound.Error() {
+			errChan <- err
+			return
+		}
+		if existingUsername != nil && existingUsername.Status == common.StatusUserActive {
+			errChan <- common.ErrUsernameAlreadyTaken
+			return
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		existingEmail, err := s.repositories.GetUserRepository().FindByEmail(ctx, payload.Email)
+		if err != nil && err.Error() != common.ErrDataNotFound.Error() {
+			errChan <- err
+			return
+		}
+		if existingEmail != nil && existingEmail.Status == common.StatusUserActive {
+			errChan <- common.ErrEmailAlreadyTaken
+			return
+		}
+	}()
+
+	// Close channel ketika goroutine selesai
+	go func() {
+		wg.Wait()
+		close(errChan)
+	}()
+
+	// mengecek error dari kedua goroutine di atas
+	for err := range errChan {
 		return err
-	}
-	if existingEmail != nil && existingEmail.Status == common.StatusUserActive {
-		return common.ErrEmailAlreadyTaken
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
