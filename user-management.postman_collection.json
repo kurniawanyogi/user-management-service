@@ -327,11 +327,8 @@
 		},
 		{
 			"name": "Login",
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
-			},
 			"request": {
-				"method": "GET",
+				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",
@@ -360,7 +357,7 @@
 				{
 					"name": "Success",
 					"originalRequest": {
-						"method": "GET",
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
@@ -408,7 +405,7 @@
 				{
 					"name": "Error - mandatory field",
 					"originalRequest": {
-						"method": "GET",
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
@@ -456,7 +453,7 @@
 				{
 					"name": "Error - invalid username or password",
 					"originalRequest": {
-						"method": "GET",
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
@@ -504,7 +501,7 @@
 				{
 					"name": "Error - user deleted",
 					"originalRequest": {
-						"method": "GET",
+						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",

@@ -2,13 +2,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/go-co-op/gocron"
 	"github.com/spf13/viper"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 	"user-management-service/common"
 )
 
@@ -46,39 +44,16 @@ type HotFlat struct {
 }
 
 func Init() {
-	consulURL := os.Getenv("CONSUL_HTTP_URL")
-
 	err := BindFromFile(&Cold, "config.cold.json", ".")
 	if err != nil {
 		fmt.Printf("failed load cold config from file: %s", viper.ConfigFileUsed())
-		err = BindFromConsul(
-			&Cold,
-			consulURL,
-			fmt.Sprintf("%s/%s", os.Getenv("CONSUL_HTTP_KEY"), "cold"),
-		)
-		if err != nil {
-			panic(err)
-		}
+		panic(err)
 	}
 
 	err = BindFromFile(&Hot, "config.hot.json", ".")
 	if err != nil {
 		fmt.Printf("failed load hot config from file: %s", viper.ConfigFileUsed())
-
-		interval, err := LoadConsulIntervalFromEnv()
-		if err != nil {
-			panic(err)
-		}
-
-		err = BindAndWatchFromConsul(
-			&Hot,
-			consulURL,
-			fmt.Sprintf("%s/%s", os.Getenv("CONSUL_HTTP_KEY"), "hot"),
-			interval,
-		)
-		if err != nil {
-			panic(err)
-		}
+		panic(err)
 	}
 }
 
@@ -114,85 +89,6 @@ func BindFromFile(dest any, filename string, paths ...string) error {
 	}
 
 	return nil
-}
-
-// BindFromConsul load config from remote consul then assign to destination
-func BindFromConsul(dest any, endPoint, path string) error {
-	v := viper.New()
-
-	v.SetConfigType("json")
-	err := v.AddRemoteProvider("consul", endPoint, path)
-	if err != nil {
-		return err
-	}
-
-	err = v.ReadRemoteConfig()
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("using config from consul: %s/%s.\n", endPoint, path)
-
-	err = v.Unmarshal(dest)
-	if err != nil {
-		fmt.Printf("failed to unmarshal config dest: %+v\n", err)
-		return err
-	}
-
-	err = SetEnvFromConsulKV(v)
-	if err != nil {
-		fmt.Printf("failed to set env from consul: %+v\n", err)
-		return err
-	}
-
-	return nil
-}
-
-// BindAndWatchFromConsul load and watch config from remote consul then assign to destination
-func BindAndWatchFromConsul(dest any, endPoint, path string, interval int) error {
-	location, err := time.LoadLocation(LoadTimeZoneFromEnv())
-	if err != nil {
-		fmt.Printf("failed load location: %s\n", location)
-	}
-
-	err = BindFromConsul(dest, endPoint, path)
-	if err != nil {
-		fmt.Printf("failed reloading consul: %+v\n", err)
-		return err
-	}
-
-	scheduler := gocron.NewScheduler(location)
-	_, err = scheduler.Every(interval).Seconds().Do(func() {
-		er := BindFromConsul(dest, endPoint, path)
-		if er != nil {
-			fmt.Printf("failed reloading consul: %+v\n", er)
-		}
-	})
-
-	if err != nil {
-		fmt.Printf("failed run scheduler specify jobFunc: %+v\n", err)
-		return err
-	}
-
-	scheduler.StartAsync()
-
-	return nil
-}
-
-// LoadConsulIntervalFromEnv get interval value for loading config from consul
-func LoadConsulIntervalFromEnv() (int, error) {
-	fromEnv := os.Getenv(common.ConsulWatchInterval)
-	if len(fromEnv) <= 0 {
-		return common.DefaultLoadConsulInterval, nil
-	}
-
-	interval, err := strconv.Atoi(fromEnv)
-	if err != nil {
-		fmt.Printf("failed convert %s: %+v\n", common.ConsulWatchInterval, err)
-		return 0, err
-	}
-
-	return interval, nil
 }
 
 func SetEnvFromConsulKV(v *viper.Viper) error {
