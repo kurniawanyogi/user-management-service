@@ -1,6 +1,7 @@
 package http
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"user-management-service/cmd/middleware"
@@ -38,6 +39,13 @@ func (r *router) Register() *gin.Engine {
 	r.engine.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, http.StatusText(http.StatusOK))
 	})
+	r.engine.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Requested-With"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
 	// v1
 	v1 := r.engine.Group("/v1")
