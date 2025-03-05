@@ -28,7 +28,7 @@ type RegistrationUserRequest struct {
 type UpdateUserRequest struct {
 	Id        int64
 	FirstName string  `json:"firstName" validate:"required,min=1,max=100"`
-	LastName  *string `json:"lastName" validate:"omitempty,min=1,max=100"`
+	LastName  *string `json:"lastName" validate:"omitempty,max=100"`
 }
 
 type LoginRequest struct {
