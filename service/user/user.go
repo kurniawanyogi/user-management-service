@@ -19,6 +19,7 @@ type IUserService interface {
 	Detail(ctx context.Context, id int64) (*model.User, error)
 	Update(ctx context.Context, payload model.UpdateUserRequest) error
 	Delete(ctx context.Context, id int64) error
+	List(ctx context.Context) ([]model.User, error)
 	Login(ctx context.Context, payload model.LoginRequest) (*string, *model.User, error)
 	Authenticate(ctx context.Context, token string) error
 }
@@ -142,6 +143,20 @@ func (s *userService) Delete(ctx context.Context, id int64) error {
 		return err
 	}
 	return nil
+}
+
+func (s *userService) List(ctx context.Context) ([]model.User, error) {
+	users, err := s.repositories.GetUserRepository().GetAll(ctx)
+	if err != nil {
+		logger.Error(ctx, "error getting all users", err, logger.Tag{Key: "logCtx", Value: ctx})
+		return nil, err
+	}
+
+	// return empty slice instead nil
+	if users == nil {
+		return []model.User{}, nil
+	}
+	return users, nil
 }
 
 func (s *userService) Login(context context.Context, payload model.LoginRequest) (*string, *model.User, error) {

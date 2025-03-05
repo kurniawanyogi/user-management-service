@@ -15,6 +15,7 @@ type IUserDelivery interface {
 	Detail(c *gin.Context)
 	Update(c *gin.Context)
 	Delete(c *gin.Context)
+	List(c *gin.Context)
 	Login(c *gin.Context)
 }
 
@@ -251,6 +252,25 @@ func (d *userDelivery) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Response{
 		Status:  common.StatusSuccess,
 		Message: "User deleted successfully",
+	})
+}
+
+func (d *userDelivery) List(c *gin.Context) {
+	var ctx = c.Request.Context()
+
+	users, err := d.services.GetUserService().List(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.Response{
+			Status:  common.StatusError,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, model.Response{
+		Status:  common.StatusSuccess,
+		Message: "User list fetched successfully",
+		Data:    users,
 	})
 }
 

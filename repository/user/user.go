@@ -15,6 +15,7 @@ type IUserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*model.User, error)
 	FindById(ctx context.Context, id int64) (*model.User, error)
 	Update(ctx context.Context, payload model.User) error
+	GetAll(ctx context.Context) ([]model.User, error)
 }
 
 type userRepository struct {
@@ -168,4 +169,17 @@ func (r *userRepository) Update(ctx context.Context, payload model.User) error {
 	}
 
 	return nil
+}
+
+func (r *userRepository) GetAll(ctx context.Context) ([]model.User, error) {
+	selectQuery := "SELECT id, username, first_name, last_name, email, status FROM pengguna"
+
+	var users []model.User
+	err := r.database.SelectContext(ctx, &users, selectQuery)
+	if err != nil {
+		logger.Error(ctx, err.Error(), err, logger.Tag{Key: "logCtx", Value: ctx})
+		return nil, common.WrapWithErr(err, common.ErrSQLExec)
+	}
+
+	return users, nil
 }

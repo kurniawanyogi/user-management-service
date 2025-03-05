@@ -21,7 +21,7 @@ type RegistrationUserRequest struct {
 	Username  string  `json:"username" validate:"required,min=3,max=32"`
 	Password  string  `json:"password" validate:"required,min=8,max=32"`
 	FirstName string  `json:"firstName" validate:"required,min=1,max=100"`
-	LastName  *string `json:"lastName" validate:"omitempty,min=1,max=100"`
+	LastName  *string `json:"lastName" validate:"omitempty,max=100"`
 	Email     string  `json:"email" validate:"required,email,max=100"`
 }
 

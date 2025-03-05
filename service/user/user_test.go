@@ -591,6 +591,86 @@ func (s *UserServiceSuite) TestUpdate() {
 	}
 }
 
+func (s *UserServiceSuite) TestList() {
+	type (
+		args struct {
+			ctx context.Context
+		}
+		want struct {
+			users []model.User
+			err   error
+		}
+
+		testCase struct {
+			name     string
+			args     args
+			mockFunc func(listMock *listMock, args args)
+			want     want
+		}
+	)
+
+	testCases := []testCase{
+		{
+			name: "List users success",
+			args: args{
+				ctx: context.Background(),
+			},
+			mockFunc: func(m *listMock, args args) {
+				s.mocks.userRepo.On("GetAll", mock.Anything).Return([]model.User{
+					{ID: 1, Username: "test1", Status: common.StatusUserActive},
+					{ID: 2, Username: "test2", Status: common.StatusUserActive},
+				}, nil)
+			},
+			want: want{
+				users: []model.User{
+					{ID: 1, Username: "test1", Status: common.StatusUserActive},
+					{ID: 2, Username: "test2", Status: common.StatusUserActive},
+				},
+				err: nil,
+			},
+		},
+		{
+			name: "List users returns empty slice",
+			args: args{
+				ctx: context.Background(),
+			},
+			mockFunc: func(m *listMock, args args) {
+				s.mocks.userRepo.On("GetAll", mock.Anything).Return(nil, nil)
+			},
+			want: want{
+				users: []model.User{},
+				err:   nil,
+			},
+		},
+		{
+			name: "List users failed, error when fetching from repository",
+			args: args{
+				ctx: context.Background(),
+			},
+			mockFunc: func(m *listMock, args args) {
+				s.mocks.userRepo.On("GetAll", mock.Anything).Return(nil, common.ErrSQLExec)
+			},
+			want: want{
+				users: nil,
+				err:   common.ErrSQLExec,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			s.SetupTest()
+
+			tc.mockFunc(&s.mocks, tc.args)
+
+			users, err := s.UserService.List(tc.args.ctx)
+
+			s.Equal(tc.want.err, err)
+			s.Equal(tc.want.users, users)
+		})
+	}
+}
+
 func (s *UserServiceSuite) TestLogin() {
 	type (
 		args struct {

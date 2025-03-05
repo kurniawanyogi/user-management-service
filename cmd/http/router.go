@@ -52,8 +52,9 @@ func (r *router) Register() *gin.Engine {
 	v1.POST("/users/registration", r.delivery.GetUserDelivery().Register)
 	v1.POST("/users/login", r.delivery.GetUserDelivery().Login)
 
-	// pengecekan token untuk endpoint get detail, update, dan delete melalui middleware AuthenticateToken()
+	// pengecekan token untuk endpoint get detail, list, update, dan delete melalui middleware AuthenticateToken()
 	v1.GET("/users/:id", r.middleware.AuthenticateToken(), r.delivery.GetUserDelivery().Detail)
+	v1.GET("/users", r.middleware.AuthenticateToken(), r.delivery.GetUserDelivery().List)
 	v1.PUT("/users/:id", r.middleware.AuthenticateToken(), r.delivery.GetUserDelivery().Update)
 	v1.DELETE("/users/:id", r.middleware.AuthenticateToken(), r.delivery.GetUserDelivery().Delete)
 
